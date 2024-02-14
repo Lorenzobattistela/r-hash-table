@@ -1,5 +1,7 @@
+use rand::distributions::{Distribution, Uniform};
 use std::cmp::PartialEq;
 use std::fmt::Debug;
+use std::usize;
 
 trait Hashable {
     fn hash(&self) -> usize;
@@ -12,6 +14,12 @@ impl Hashable for String {
             result = ((result << 5).wrapping_add(result)).wrapping_add(c.into());
         }
         result
+    }
+}
+
+impl Hashable for usize {
+    fn hash(&self) -> usize {
+        *self
     }
 }
 
@@ -51,14 +59,29 @@ impl<Key: Default + Clone + Hashable + Debug + PartialEq, Value: Default + Clone
 
     fn extend(&mut self) {
         todo!();
+        assert!(self.cells.len() > 0);
+        let mut new_self = Self {
+            cells: vec![HashCell::<_, _>::default(); self.cells.len() * 2 + 1],
+            taken_count: 0,
+        };
+
+        for cell in self.cells.iter() {
+            if cell.taken {
+                new_self.insert(cell.key.clone(), cell.value.clone());
+            }
+        }
+
+        *self = new_self;
     }
 
     fn insert(&mut self, key: Key, value: Value) {
         if let Some(old_value) = self.get_mut(&key) {
             *old_value = value.clone();
         }
-        // here we call get mut that extends the table anyway
 
+        if self.taken_count >= self.cells.len() {
+            self.extend();
+        }
         assert!(self.taken_count < self.cells.len());
 
         let mut index = key.hash() % self.cells.len();
@@ -74,10 +97,28 @@ impl<Key: Default + Clone + Hashable + Debug + PartialEq, Value: Default + Clone
         self.taken_count += 1;
     }
 
+    fn get_index(&self, key: &Key) -> Option<usize> {
+        let mut index = key.hash() % self.cells.len();
+        for _ in 0..self.cells.len() {
+            if !self.cells[index].taken {
+                break;
+            }
+
+            if self.cells[index].key == *key {
+                break;
+            }
+
+            index = (index + 1) % self.cells.len();
+        }
+        if self.cells[index].taken && self.cells[index].key == *key {
+            return Some(index);
+        }
+        None
+    }
+
     // we do not need to get ownership of the key for get, so use & (a reference for it)
     fn get(&self, key: &Key) -> Option<&Value> {
-        let index = key.hash() % self.cells.len();
-        if self.cells[index].taken {
+        if let Some(index) = self.get_index(key) {
             return Some(&self.cells[index].value);
         }
         None
@@ -85,19 +126,7 @@ impl<Key: Default + Clone + Hashable + Debug + PartialEq, Value: Default + Clone
 
     // now we have a version that returns a mutable version of the value
     fn get_mut(&mut self, key: &Key) -> Option<&mut Value> {
-        if self.taken_count >= self.cells.len() {
-            self.extend();
-        }
-        assert!(self.taken_count < self.cells.len());
-
-        let mut index = key.hash() % self.cells.len();
-        while self.cells[index].taken && self.cells[index].key != *key {
-            index = (index + 1) % self.cells.len();
-        }
-
-        // key is equal to the original key
-        if self.cells[index].taken {
-            assert!(self.cells[index].key == *key);
+        if let Some(index) = self.get_index(key) {
             return Some(&mut self.cells[index].value);
         }
         None
@@ -105,10 +134,8 @@ impl<Key: Default + Clone + Hashable + Debug + PartialEq, Value: Default + Clone
 }
 
 fn main() {
-    let mut phone_book = HashTable::<String, String>::new();
     phone_book.insert("a".to_string(), "2983798321".to_string());
     phone_book.debug_dump();
     println!("--------------------------------");
     println!("{:?}", phone_book.get(&"a".to_string()));
-    println!("{:?}", phone_book.get(&"b".to_string()));
 }
