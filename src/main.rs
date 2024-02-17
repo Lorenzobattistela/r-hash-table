@@ -48,6 +48,7 @@ where
         }
     }
 
+    #[allow(dead_code)]
     fn debug_dump(&self) {
         for cell in self.cells.iter() {
             if cell.taken {
@@ -59,7 +60,6 @@ where
     }
 
     fn extend(&mut self) {
-        todo!();
         assert!(self.cells.len() > 0);
         let mut new_self = Self {
             cells: vec![HashCell::<_, _>::default(); self.cells.len() * 2 + 1],
@@ -117,6 +117,7 @@ where
         None
     }
 
+    #[allow(dead_code)]
     // we do not need to get ownership of the key for get, so use & (a reference for it)
     fn get(&self, key: &Key) -> Option<&Value> {
         if let Some(index) = self.get_index(key) {
