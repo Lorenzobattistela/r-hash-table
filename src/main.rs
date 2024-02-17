@@ -35,8 +35,10 @@ struct HashTable<Key, Value> {
     taken_count: usize,
 }
 
-impl<Key: Default + Clone + Hashable + Debug + PartialEq, Value: Default + Clone + Debug>
-    HashTable<Key, Value>
+impl<Key, Value> HashTable<Key, Value>
+where
+    Key: Clone + Default + Debug + PartialEq + Hashable,
+    Value: Clone + Default + Debug,
 {
     fn new() -> Self {
         const INITIAL_CAPACITY: usize = 11;
