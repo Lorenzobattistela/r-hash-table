@@ -1,4 +1,3 @@
-use rand::distributions::{Distribution, Uniform};
 use std::cmp::PartialEq;
 use std::fmt::Debug;
 use std::usize;
