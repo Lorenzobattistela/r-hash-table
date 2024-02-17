@@ -1,5 +1,6 @@
 use std::cmp::PartialEq;
 use std::fmt::Debug;
+use std::time::Instant;
 use std::usize;
 
 trait Hashable {
@@ -135,9 +136,39 @@ where
     }
 }
 
+fn benchmark_table(n: usize) {
+    let mut hash = HashTable::<usize, usize>::new();
+    for _ in 0..n {
+        let key = rand::random::<usize>();
+        if let Some(value) = hash.get_mut(&key) {
+            *value += 1;
+        } else {
+            hash.insert(key, 1);
+        }
+    }
+}
+
+fn benchmark_std_table(n: usize) {
+    use std::collections::HashMap;
+    let mut hash = HashMap::<usize, usize>::new();
+    for _ in 0..n {
+        let key = rand::random::<usize>();
+        if let Some(value) = hash.get_mut(&key) {
+            *value += 1;
+        } else {
+            hash.insert(key, 1);
+        }
+    }
+}
+
 fn main() {
-    phone_book.insert("a".to_string(), "2983798321".to_string());
-    phone_book.debug_dump();
-    println!("--------------------------------");
-    println!("{:?}", phone_book.get(&"a".to_string()));
+    const N: usize = 100_000;
+
+    let begin = Instant::now();
+    benchmark_table(N);
+    println!("{}", begin.elapsed().as_secs_f32());
+
+    let begin = Instant::now();
+    benchmark_std_table(N);
+    println!("{}", begin.elapsed().as_secs_f32());
 }
